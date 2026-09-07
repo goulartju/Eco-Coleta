@@ -42,6 +42,7 @@ export interface Doacao{
   tampinhas: number;
   data: string;
   nomeAluno: string;
+  alunoAtivo?: boolean;
   nomeTurma: string;
   nomeEscola: string;
   nomeCalendario: string;
