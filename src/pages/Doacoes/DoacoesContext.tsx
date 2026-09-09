@@ -2,14 +2,14 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { DoacoesService } from '@/services/doacoes.service';
-import type { Doacao, DoacoesFilter, DoacoesUpdatePayload } from '@/types/doacoes-types';
+import type { Doacao, DoacoesFilter, DoacoesPayload } from '@/types/doacoes-types';
 
 interface DoacoesContextType {
   doacoes: Doacao[];
   filtroDoacoes: DoacoesFilter;
   setFiltroDoacoes: (filter: DoacoesFilter) => void;
   buscarDoacoes: (filter: DoacoesFilter) => Promise<Doacao[]>;
-  updateDoacoes: (payload: DoacoesUpdatePayload) => Promise<Doacao[]>;
+  updateDoacoes: (payload: DoacoesPayload) => Promise<Doacao[]>;
   deleteDoacao: (id: string) => void;
 }
 
@@ -55,17 +55,21 @@ export const DoacoesProvider = ({ children }: { children: ReactNode }) => {
     setFiltroDoacoesState(filter);
   };
 
-  const updateDoacoes = async (payload: DoacoesUpdatePayload) => {
+  const updateDoacoes = async (payload: DoacoesPayload) => {
     try {
-      const updatedDoacoes = await DoacoesService.update(payload);
-      const normalizedDoacoes = updatedDoacoes.map(normalizeDoacao);
-      setDoacoes(prev => {
-        const updatedIds = new Set(normalizedDoacoes.map(d => d.id).filter(Boolean));
-        return [
-          ...prev.filter(d => !d.id || !updatedIds.has(d.id)),
-          ...normalizedDoacoes,
-        ];
-      });
+      const updatedDoacoes = await DoacoesService.create(payload);
+      // O back pode responder 200 sem lista (ex: corpo vazio) — isso é
+      // sucesso, não erro: só mescla quando vier array.
+      const normalizedDoacoes = (Array.isArray(updatedDoacoes) ? updatedDoacoes : []).map(normalizeDoacao);
+      if (normalizedDoacoes.length > 0) {
+        setDoacoes(prev => {
+          const updatedIds = new Set(normalizedDoacoes.map(d => d.id).filter(Boolean));
+          return [
+            ...prev.filter(d => !d.id || !updatedIds.has(d.id)),
+            ...normalizedDoacoes,
+          ];
+        });
+      }
       return normalizedDoacoes;
     } catch (error) {
       toast.error("Erro ao atualizar doacoes. Tente novamente.");

@@ -28,7 +28,7 @@ import { usePermissao } from "@/hooks/usePermissao";
 import { toast } from "sonner";
 import type {
   DoacoesFilter,
-  DoacoesUpdatePayload,
+  DoacoesPayload,
 } from "@/types/doacoes-types";
 
 type DoacaoRegistro = {
@@ -55,6 +55,8 @@ export function Doacoes() {
   );
   const [modoEdicao, setModoEdicao] = useState(false);
   const [buscaRealizada, setBuscaRealizada] = useState(false);
+  // Remonta a grade a cada busca/save: evita linhas com estado visual obsoleto.
+  const [versaoGrade, setVersaoGrade] = useState(0);
 
   const doacoesFilter = useMemo<DoacoesFilter>(
     () => ({
@@ -97,6 +99,7 @@ export function Doacoes() {
       await buscarDoacoes(doacoesFilter);
       setBuscaRealizada(true);
       resetEdicao();
+      setVersaoGrade((v) => v + 1);
     } catch (error) {
       console.error("Erro ao buscar doacoes:", error);
     }
@@ -135,7 +138,7 @@ export function Doacoes() {
       return;
     }
 
-    const payload: DoacoesUpdatePayload = {
+    const payload: DoacoesPayload = {
       escolaId: selectedEscola,
       calendarioId: selectedCalendario,
       data: selectedData,
@@ -154,9 +157,17 @@ export function Doacoes() {
 
     try {
       await updateDoacoes(payload);
-      await buscarDoacoes(doacoesFilter);
-      toast.success("Doacoes salvas com sucesso!");
+      // Sai do modo edição antes de recarregar, monta o filtro atual
+      // e busca de novo para renderizar a grade atualizada.
       resetEdicao();
+      await buscarDoacoes({
+        calendarioId: selectedCalendario || undefined,
+        data: selectedData || undefined,
+        escolaId: selectedEscola || undefined,
+        turmaId: selectedTurma || undefined,
+      });
+      setVersaoGrade((v) => v + 1);
+      toast.success("Doacoes salvas com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar doacoes:", error);
     }
@@ -361,7 +372,7 @@ export function Doacoes() {
                 <p>Nenhuma doacao encontrada para os filtros selecionados</p>
               </div>
             ) : (
-              <Table>
+              <Table key={versaoGrade}>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Aluno</TableHead>
@@ -389,7 +400,7 @@ export function Doacoes() {
                     const doacao = turmaDoacoes.get(matriculaId);
 
                     return (
-                      <TableRow key={doacaoExistente.id ?? matriculaId}>
+                      <TableRow key={doacaoExistente.matriculaId}>
                         <TableCell className="font-medium">
                           {doacaoExistente.nomeAluno}
                           {doacaoExistente.alunoAtivo === false && (

@@ -8,18 +8,18 @@ export interface DoacaoPayload {
   data: string;
 }
 
-export interface DoacaoUpdateItem {
+export interface DoacaoItem {
   id: string;
   matriculaId: string;
   qtdLacre: number;
   qtdTampinha: number;
 }
 
-export interface DoacoesUpdatePayload {
+export interface DoacoesPayload {
   escolaId: string;
   calendarioId: string;
   data: string;
-  doacoes: DoacaoUpdateItem[];
+  doacoes: DoacaoItem[];
 }
 
 export interface DoacoesFilter {
